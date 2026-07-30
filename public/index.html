@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Gestión de Managers · Quantica360</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { margin:0; background:#f6f5f3; color:#1f1b16; }
+  header { padding:24px 32px; background:#1f1b16; color:#fff; }
+  header h1 { margin:0; font-size:20px; }
+  main { max-width:900px; margin:0 auto; padding:32px; }
+  .gate { max-width:360px; margin:80px auto; background:#fff; padding:32px; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.08); text-align:center; }
+  .gate input { width:100%; padding:10px; margin:12px 0; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size:14px; }
+  .gate button, .refresh { background:#1f1b16; color:#fff; border:none; padding:10px 18px; border-radius:8px; cursor:pointer; font-size:14px; }
+  .manager { background:#fff; border-radius:12px; padding:20px 24px; margin-bottom:20px; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .manager h2 { margin-top:0; font-size:17px; }
+  .booking { border-top:1px solid #eee; padding:10px 0; font-size:14px; display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:4px 16px; }
+  .booking:first-child { border-top:none; }
+  .label { color:#888; font-size:11px; text-transform:uppercase; display:block; }
+  .empty { color:#888; font-size:14px; }
+  .error { color:#b00020; text-align:center; margin-top:12px; font-size:13px; }
+</style>
+</head>
+<body>
+<div id="gate" class="gate">
+  <h2>Acceso administrador</h2>
+  <input id="key" type="password" placeholder="Clave de acceso" />
+  <button id="unlockBtn">Entrar</button>
+  <div id="gate-error" class="error"></div>
+</div>
+
+<div id="app" style="display:none">
+  <header><h1>Quantica360 · Citas archivadas por manager</h1></header>
+  <main>
+    <button class="refresh" id="refreshBtn">Actualizar</button>
+    <div id="content" style="margin-top:20px"></div>
+  </main>
+</div>
+
+<script>
+var adminKey = '';
+
+function unlock() {
+  var key = document.getElementById('key').value.trim();
+  if (!key) return;
+  adminKey = key;
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  load();
+}
+
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function load() {
+  var content = document.getElementById('content');
+  content.innerHTML = 'Cargando…';
+  fetch('/.netlify/functions/get-bookings?key=' + encodeURIComponent(adminKey))
+    .then(function (res) {
+      if (res.status === 401) {
+        content.innerHTML = '<div class="error">Clave incorrecta.</div>';
+        return null;
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      var managers = Object.keys(data).sort();
+      if (managers.length === 0) {
+        content.innerHTML = '<div class="empty">Todavía no hay citas archivadas.</div>';
+        return;
+      }
+      content.innerHTML = managers.map(function (m) {
+        var bookings = data[m] || [];
+        var displayName = bookings[0] ? bookings[0].manager : m.replace(/-/g, ' ');
+        var rows = bookings.map(function (b) {
+          return (
+            '<div class="booking">' +
+              '<div><span class="label">Cliente</span>' + escapeHtml(b.client_name) + '</div>' +
+              '<div><span class="label">Teléfono</span>' + escapeHtml(b.phone) + '</div>' +
+              '<div><span class="label">Dirección</span>' + escapeHtml(b.address) + '</div>' +
+              '<div><span class="label">Fecha y hora</span>' + escapeHtml(b.appointment_time) + '</div>' +
+              '<div><span class="label">Idioma</span>' + escapeHtml(b.language) + '</div>' +
+            '</div>'
+          );
+        }).join('');
+        return (
+          '<div class="manager"><h2>' + escapeHtml(displayName) + '</h2>' +
+          (rows || '<div class="empty">Sin citas</div>') + '</div>'
+        );
+      }).join('');
+    })
+    .catch(function () {
+      content.innerHTML = '<div class="error">Error al cargar los datos.</div>';
+    });
+}
+
+document.getElementById('unlockBtn').addEventListener('click', unlock);
+document.getElementById('key').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') unlock();
+});
+document.getElementById('refreshBtn').addEventListener('click', load);
+</script>
+</body>
+</html>
