@@ -32,6 +32,7 @@ exports.handler = async (event) => {
   } catch (err) {
     return { statusCode: 400, body: 'Invalid JSON' };
   }
+  console.log('DEBUG PAYLOAD RECIBIDO:', JSON.stringify(payload));
 
   const calendarId =
     payload.calendar_id ||
