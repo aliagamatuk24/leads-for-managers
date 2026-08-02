@@ -1,3 +1,8 @@
+ADVERTENCIA (1 de agosto de 2026): este documento describe un sitio que YA NO SE USA.
+El sitio real y activo ahora es https://regal-hamster-65a058.netlify.app
+La documentacion correcta y actualizada esta en el repositorio aliagamatuk-code/gestion-de-managers, archivo CONFIGURACION-CRITICA.md.
+Este documento se deja aqui solo como registro historico.
+
 Configuracion critica - NO TOCAR sin leer esto
 ================================================
 
